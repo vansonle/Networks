@@ -14,8 +14,6 @@ class Image:
         self.Otsu_HoG_overlay = []
         self.watershed_overlay = []
         self.threshold_mask = []
-        self.networks_method_1_segmentation = []
-        self.networks_method_2_segmentation = []
         self.Ncut_segmentation =  []
         self.Ncut_segm_mask =  []
         self.felzen_segmentation = []
@@ -89,77 +87,6 @@ class Image:
         # --------------------------------------------------------
 
 
-    def networks_method_1(self, compact, segm, threshold):
-        # http://scikit-image.org/docs/dev/api/skimage.future.graph.html#skimage.future.graph.cut_threshold
-        # ---- Generates a graph and then cuts wrt to threshold --
-        img = np.copy(self.img)
-        labels = segmentation.slic(img, compactness=compact, n_segments=segm)
-        rag = graph.rag_mean_color(img, labels, mode='distance')
-        labels_method_1 = graph.cut_threshold(labels, rag, threshold)
-        img_segmented_method_1 = color.label2rgb(labels_method_1, img, kind='avg')
-        self.networks_method_1_segmentation = img_segmented_method_1
-        # --------------------------------------------------------
-
-    def networks_method_2(self, compact, segm, threshold):
-        # http://scikit-image.org/docs/dev/auto_examples/segmentation/plot_rag_merge.html#sphx-glr-auto-examples-segmentation-plot-rag-merge-py
-        # ---- Generates a graph and then merges wrt to threshold --
-        img = np.copy(self.img)
-        labels = segmentation.slic(img, compactness=compact, n_segments=segm)
-        rag = graph.rag_mean_color(img, labels, mode='distance')
-
-        def _weight_mean_color(graph, src, dst, n):
-                """Callback to handle merging nodes by recomputing mean color.
-
-                The method expects that the mean color of `dst` is already computed.
-
-                Parameters
-                ----------
-                graph : RAG
-                    The graph under consideration.
-                src, dst : int
-                    The vertices in `graph` to be merged.
-                n : int
-                    A neighbor of `src` or `dst` or both.
-
-                Returns
-                -------
-                data : dict
-                    A dictionary with the `"weight"` attribute set as the absolute
-                    difference of the mean color between node `dst` and `n`.
-                """
-
-                diff = graph.node[dst]['mean color'] - graph.node[n]['mean color']
-                diff = np.linalg.norm(diff)
-                return {'weight': diff}
-
-        def merge_mean_color(graph, src, dst):
-            """Callback called before merging two nodes of a mean color distance graph.
-
-            This method computes the mean color of `dst`.
-
-            Parameters
-            ----------
-            graph : RAG
-                The graph under consideration.
-            src, dst : int
-                The vertices in `graph` to be merged.
-            """
-            graph.node[dst]['total color'] += graph.node[src]['total color']
-            graph.node[dst]['pixel count'] += graph.node[src]['pixel count']
-            graph.node[dst]['mean color'] = (graph.node[dst]['total color'] /
-                                             graph.node[dst]['pixel count'])
-
-        # Merges nodes given a threshold
-        labels_method_2 = graph.merge_hierarchical(labels, rag, thresh=threshold, rag_copy=False,
-                                                   in_place_merge=True,
-                                                   merge_func=merge_mean_color,
-                                                   weight_func=_weight_mean_color)
-
-        img_segmented_method_2 = color.label2rgb(labels_method_2, img, kind='avg')
-        img_segmented_boundaries_method_2 = segmentation.mark_boundaries(img_segmented_method_2, labels_method_2, (0, 0, 0))
-        self.networks_method_2_segmentation = img_segmented_method_2
-    # --------------------------------------------------------
-
     def threshold_mask(self, threshold):
         # -------- threshold_mask --------------------------------
         img = np.copy(self.img)
@@ -171,7 +98,6 @@ class Image:
 
     def Ncut_segm(self, compact, segm):
         """Function segments an image using the Ncut algorithm
-
         Parameters: compactness=compact, n_segments=segm
         """
 
@@ -198,8 +124,6 @@ class Image:
 
     def felzen_segm(self, scale, sigma, min_size):
         """Function segments an image using the felzenszwalb algorithm
-
-        Parameters: compactness=compact, n_segments=segm
         """
 
         img = np.copy(self.img)
@@ -225,7 +149,6 @@ class Image:
 
     def rw_segm(self, compact, segm):
         """Function segments an image using the Random Walker algorithm
-
         Parameters: compactness=compact, n_segments=segm
         """
 
